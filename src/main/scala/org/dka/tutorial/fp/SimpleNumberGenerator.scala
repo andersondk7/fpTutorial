@@ -49,7 +49,6 @@ trait NumberGenerator {
                                        )
 
   def map[A,B](f:Rand[A])(g: A => B): Rand[B] = flatMap(f)(a => unit(g(a)))
-//  def map[S,A,B](f: S => (A,S))(g: A => B): S => (B,S) = //flatMap(f)(a => unit(g(a)))
 //    g1 => {
 //      val (a, g2) = f(g1)
 //      (g(a), g2)
