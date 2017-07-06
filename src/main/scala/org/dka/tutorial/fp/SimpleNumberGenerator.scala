@@ -1,29 +1,28 @@
 package org.dka.tutorial.fp
 
-
 trait NumberGenerator {
-  type Next[+A] = (A, NumberGenerator)
-  type Rand[+A] = NumberGenerator => Next[A]
+  type NextGen[+A] = (A, NumberGenerator)
+  type Rand[+A] = NumberGenerator => NextGen[A]
 
   // --------------------------------------------------------
   // what must be implemented
   // --------------------------------------------------------
-  def nextInt: Next[Int]
+  def nextInt: NextGen[Int]
 
   // --------------------------------------------------------
   // other methods (based on nextInt)
   // --------------------------------------------------------
-  def nonNegativeInt(generator: NumberGenerator): Next[Int] = next[Int](generator)(i => if (i < 0) -(i+1) else i)
+  def nonNegativeInt(generator: NumberGenerator): NextGen[Int] = next[Int](generator)(i => if (i < 0) -(i+1) else i)
 
-  def nextBoolean(generator: NumberGenerator): Next[Boolean] = next[Boolean](generator)(i => i % 2 == 0)
+  def nextBoolean(generator: NumberGenerator): NextGen[Boolean] = next[Boolean](generator)(i => i % 2 == 0)
 
-  def nextDouble(generator: NumberGenerator): Next[Double] = next[Double](generator)(i => i / (Int.MaxValue.toDouble + 1))
+  def nextDouble(generator: NumberGenerator): NextGen[Double] = next[Double](generator)(i => i / (Int.MaxValue.toDouble + 1))
 
-  def nextInts(size: Int): Next[List[Int]] = nextList[Int](size)(g => g.nextInt)
+  def nextInts(size: Int): NextGen[List[Int]] = nextList[Int](size)(g => g.nextInt)
 
-  def nextNonNegativeInts(size: Int): Next[List[Int]] = nextList[Int](size)(g => g.nonNegativeInt(g))
+  def nextNonNegativeInts(size: Int): NextGen[List[Int]] = nextList[Int](size)(g => g.nonNegativeInt(g))
 
-  def nextBooleans(size: Int): Next[List[Boolean]] = nextList[Boolean](size)(g => g.nextBoolean(g))
+  def nextBooleans(size: Int): NextGen[List[Boolean]] = nextList[Boolean](size)(g => g.nextBoolean(g))
 
   def nonNegativeLessThan(n: Int): Rand[Int] = {
     flatMap(nonNegativeInt) { i =>
@@ -34,14 +33,14 @@ trait NumberGenerator {
 
   def rollDie: Rand[Int] = map(nonNegativeLessThan(6))(_ + 1)
 
-  def nextDie(size: Int): Next[List[Int]] = nextList[Int](size)(g => g.rollDie(g))
+  def nextDie(size: Int): NextGen[List[Int]] = nextList[Int](size)(g => g.rollDie(g))
 
   // --------------------------------------------------------
   // function building blocks
   // --------------------------------------------------------
-  private def next[A](generator: NumberGenerator)(f: Int => A): Next[A] = map(_.nextInt)(f).apply(generator)
+  private def next[A](generator: NumberGenerator)(f: Int => A): NextGen[A] = map[Int, A](_.nextInt)(f).apply(generator)
 
-  private def nextList[A](size: Int)(f: NumberGenerator => Next[A]): Next[List[A]] =
+  private def nextList[A](size: Int)(f: NumberGenerator => NextGen[A]): NextGen[List[A]] =
     (1 to size)
       .foldLeft( (List[A](), this) ) ( (e, _) => {
                                                    val (r, g) = f(e._2)
@@ -50,6 +49,7 @@ trait NumberGenerator {
                                        )
 
   def map[A,B](f:Rand[A])(g: A => B): Rand[B] = flatMap(f)(a => unit(g(a)))
+//  def map[S,A,B](f: S => (A,S))(g: A => B): S => (B,S) = //flatMap(f)(a => unit(g(a)))
 //    g1 => {
 //      val (a, g2) = f(g1)
 //      (g(a), g2)
